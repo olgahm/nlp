@@ -1,4 +1,4 @@
-# librAIry NLP toolkit for Spanish texts
+# librAIry NLP toolkit
 
 `nlpES-service` provides a fast and easy way to analyze texts from large document corpora by using both HTTP-Restful and AVRO API.
 
