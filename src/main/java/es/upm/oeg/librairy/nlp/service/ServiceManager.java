@@ -28,21 +28,24 @@ public class ServiceManager {
     @Value("#{environment['SPOTLIGHT_THRESHOLD']?:${spotlight.threshold}}")
     Double threshold;
 
-    LoadingCache<String, CoreNLPService> coreServices;
+    @Value("#{environment['SERVER_THREADS']?:${server.tomcat.max-threads}}")
+    Integer maxThreads;
 
-    LoadingCache<String, IXAService> ixaModels;
+    LoadingCache<Long, CoreNLPService> coreServices;
 
-    LoadingCache<String, DBpediaService> dbpediaServices;
+    LoadingCache<Long, IXAService> ixaModels;
 
-    LoadingCache<String, CoreNLPService> wordnetServices;
+    LoadingCache<Long, DBpediaService> dbpediaServices;
+
+    LoadingCache<Long, CoreNLPService> wordnetServices;
 
     @PostConstruct
     public void setup(){
         ixaModels = CacheBuilder.newBuilder()
-                .maximumSize(100)
+                .maximumSize(maxThreads)
                 .build(
-                        new CacheLoader<String, IXAService>() {
-                            public IXAService load(String key) throws ExecutionException {
+                        new CacheLoader<Long, IXAService>() {
+                            public IXAService load(Long key) throws ExecutionException {
                                 try{
                                     LOG.info("Initializing IXA service for thread: " + key);
                                     IXAService ixaService = new IXAService(resourceFolder);
@@ -56,10 +59,10 @@ public class ServiceManager {
                         });
 
         coreServices = CacheBuilder.newBuilder()
-                .maximumSize(100)
+                .maximumSize(maxThreads)
                 .build(
-                        new CacheLoader<String, CoreNLPService>() {
-                            public CoreNLPService load(String key) throws ExecutionException {
+                        new CacheLoader<Long, CoreNLPService>() {
+                            public CoreNLPService load(Long key) throws ExecutionException {
                                 LOG.info("Initializing CoreNLP service for thread: " + key);
                                 try{
                                     return new CoreNLPService();
@@ -71,10 +74,10 @@ public class ServiceManager {
                         });
 
         wordnetServices = CacheBuilder.newBuilder()
-                .maximumSize(100)
+                .maximumSize(maxThreads)
                 .build(
-                        new CacheLoader<String, CoreNLPService>() {
-                            public CoreNLPService load(String key) throws ExecutionException {
+                        new CacheLoader<Long, CoreNLPService>() {
+                            public CoreNLPService load(Long key) throws ExecutionException {
                                 try{
                                     LOG.info("Initializing Wordnet-based CoreNLP service for thread: " + key);
                                     return new WordnetService(resourceFolder);
@@ -87,10 +90,10 @@ public class ServiceManager {
 
 
         dbpediaServices = CacheBuilder.newBuilder()
-                .maximumSize(100)
+                .maximumSize(maxThreads)
                 .build(
-                        new CacheLoader<String, DBpediaService>() {
-                            public DBpediaService load(String key) throws ExecutionException {
+                        new CacheLoader<Long, DBpediaService>() {
+                            public DBpediaService load(Long key) throws ExecutionException {
                                 try{
                                     LOG.info("Initializing DBpedia service for thread: " + key);
                                     return new DBpediaService(endpoint, threshold);
@@ -104,7 +107,8 @@ public class ServiceManager {
 
     public IXAService getIXAService(Thread thread) {
         try {
-            return ixaModels.get("thread"+thread.getId());
+            Long key = getKey(thread.getId());
+            return ixaModels.get(key);
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -113,7 +117,8 @@ public class ServiceManager {
     public CoreNLPService getCoreService(Thread thread) {
 
         try {
-            return coreServices.get("thread"+thread.getId());
+            Long key = getKey(thread.getId());
+            return coreServices.get(key);
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -123,7 +128,8 @@ public class ServiceManager {
     public CoreNLPService getWordnetService(Thread thread) {
 
         try {
-            return wordnetServices.get("thread"+thread.getId());
+            Long key = getKey(thread.getId());
+            return wordnetServices.get(key);
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -133,10 +139,15 @@ public class ServiceManager {
     public DBpediaService getDBpediaService(Thread thread) {
 
         try {
-            return dbpediaServices.get("thread"+thread.getId());
+            Long key = getKey(thread.getId());
+            return dbpediaServices.get(key);
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Long getKey(Long id){
+        return id % maxThreads;
     }
 
     public void setResourceFolder(String resourceFolder) {
