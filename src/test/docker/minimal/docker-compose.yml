@@ -1,0 +1,10 @@
+version: '2'
+services:
+  nlp:
+    image: librairy/nlp:latest
+    restart: always
+    ports:
+     - "6100:7777"
+     - "65111:65111"
+    environment:
+      - REST_PATH=/nlp

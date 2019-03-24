@@ -19,7 +19,7 @@ import org.springframework.context.annotation.FilterType;
 
 @SpringBootApplication
 @EnableAutoConfiguration(exclude = {DataSourceAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class, SolrAutoConfiguration.class})
-@ComponentScan(basePackages = {"es.upm.oeg.librairy.nlp","org.librairy.service"})
+@ComponentScan(basePackages = {"es.upm.oeg.librairy.nlp","es.upm.oeg.librairy.service"})
 public class Application  {
 
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
