@@ -1,4 +1,4 @@
-package es.upm.oeg.librairy.nlp.service;
+package es.upm.oeg.librairy.nlp.service.annotator;
 
 import es.upm.oeg.librairy.nlp.annotators.wordnet.WordnetAnnotatorEN;
 import org.slf4j.Logger;
@@ -11,8 +11,12 @@ public class WordnetService extends CoreNLPService{
 
     private static final Logger LOG = LoggerFactory.getLogger(WordnetService.class);
 
-    public WordnetService(String resourceFolder) {
-        this.annotators.put("en", new WordnetAnnotatorEN(resourceFolder));
+    private final String lang;
+
+    public WordnetService(String resourceFolder, String lang) {
+        super("--");
+        this.lang = lang.toLowerCase();
+        annotator =  new WordnetAnnotatorEN(resourceFolder);
     }
 
 }

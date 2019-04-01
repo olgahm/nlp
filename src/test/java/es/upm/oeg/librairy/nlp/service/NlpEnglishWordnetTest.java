@@ -1,7 +1,7 @@
 package es.upm.oeg.librairy.nlp.service;
 
 import es.upm.oeg.librairy.nlp.service.annotator.CoreNLPService;
-import org.junit.Assert;
+import es.upm.oeg.librairy.nlp.service.annotator.WordnetService;
 import org.junit.Before;
 import org.junit.Test;
 import org.librairy.service.nlp.facade.model.Annotation;
@@ -12,39 +12,32 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author Badenes Olmedo, Carlos <cbadenes@fi.upm.es>
  */
 
-public class NlpEsServiceTest {
+public class NlpEnglishWordnetTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(NlpEsServiceTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NlpEnglishWordnetTest.class);
 
     CoreNLPService service;
 
     @Before
     public void setup(){
-        service = new CoreNLPService("es");
+        service = new WordnetService("src/main/bin","en");
     }
 
     @Test
     public void annotation() throws IOException {
 
-        String text = "Este es mi primer ejemplo";
+        String text = "Barack Hussein Obama II is an American attorney and politician who served as the 44th president of the United States from 2009 to 2017.";
 
         List<PoS> filter = Collections.emptyList();
 
         List<Annotation> annotations = service.annotations(text, filter);
 
-        Assert.assertEquals(5, annotations.size());
-
         annotations.forEach(annotation -> System.out.println("Annotation: " + annotation));
-
-        List<String> pos = annotations.stream().map(a -> a.getToken().getPos().name()).collect(Collectors.toList());
-
-        Assert.assertArrayEquals(new String[]{PoS.PRONOUN.name(),PoS.VERB.name(),PoS.ARTICLE.name(),PoS.ADJECTIVE.name(),PoS.NOUN.name()}, pos.toArray());
 
     }
 

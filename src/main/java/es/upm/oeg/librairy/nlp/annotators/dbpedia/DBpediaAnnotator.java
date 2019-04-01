@@ -1,6 +1,7 @@
 package es.upm.oeg.librairy.nlp.annotators.dbpedia;
 
 import org.librairy.service.nlp.facade.model.Annotation;
+import org.librairy.service.nlp.facade.model.PoS;
 
 import java.util.List;
 
@@ -9,7 +10,7 @@ import java.util.List;
  */
 public interface DBpediaAnnotator {
 
-    List<Annotation> annotate (String text);
+    List<Annotation> annotate (String text, List<PoS> filter);
 
 
 }

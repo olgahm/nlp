@@ -1,15 +1,17 @@
-package es.upm.oeg.librairy.nlp.service;
+package es.upm.oeg.librairy.nlp.service.annotator;
 
 import es.upm.oeg.librairy.nlp.annotators.dbpedia.DBpediaAnnotator;
 import es.upm.oeg.librairy.nlp.annotators.dbpedia.DBpediaRestAnnotator;
 import org.librairy.service.nlp.facade.model.Annotation;
+import org.librairy.service.nlp.facade.model.Form;
+import org.librairy.service.nlp.facade.model.PoS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,28 +19,30 @@ import java.util.regex.Pattern;
  * @author Badenes Olmedo, Carlos <cbadenes@fi.upm.es>
  */
 
-public class DBpediaService  {
+public class DBpediaService  implements AnnotatorService {
 
     private static final Logger LOG = LoggerFactory.getLogger(DBpediaService.class);
 
-    Map<String, DBpediaAnnotator> annotators = new ConcurrentHashMap<>();
+    private final String lang;
 
-    public DBpediaService(String endpoint, Double threshold) {
+    DBpediaAnnotator annotator;
 
-        this.annotators.put("es", new DBpediaRestAnnotator(endpoint.replace("%%","es"), threshold));
-        this.annotators.put("en", new DBpediaRestAnnotator(endpoint.replace("%%","en"), threshold));
+    public DBpediaService(String endpoint, Double threshold, String lang, Boolean multigrams, Boolean references, AnnotatorService baseAnnotator) {
+
+        this.lang = lang.toLowerCase();
+
+        annotator = new DBpediaRestAnnotator(endpoint.replace("%%",this.lang), threshold, multigrams, references, baseAnnotator);
 
         LOG.debug("DBpedia Service initialized");
     }
 
-    public List<Annotation> annotations (String text, String lang){
+    @Override
+    public String tokens(String text, List<PoS> filter, Form form) {
+        return text;
+    }
 
-        if (!annotators.containsKey(lang.toLowerCase())){
-            LOG.warn("language '" + lang + "' not supported");
-            return Collections.emptyList();
-        }
-
-        DBpediaAnnotator annotator = annotators.get(lang.toLowerCase());
+    @Override
+    public List<Annotation> annotations(String text, List<PoS> filter) {
 
         List<Annotation> annotations = new ArrayList<>();
         Matcher matcher = Pattern.compile(".{1,1000}(\\.|.$)",Pattern.MULTILINE).matcher(text);
@@ -46,7 +50,7 @@ public class DBpediaService  {
         while (matcher.find()){
             String partialContent = matcher.group();
             Instant startAnnotation = Instant.now();
-            List<Annotation> partialAnnotations = annotator.annotate(partialContent);
+            List<Annotation> partialAnnotations = annotator.annotate(partialContent, filter);
             for(Annotation annotation : partialAnnotations){
                 annotation.setOffset((groupIndex*1000)+annotation.getOffset());
             }
@@ -59,5 +63,4 @@ public class DBpediaService  {
         }
         return annotations;
     }
-
 }

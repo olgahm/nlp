@@ -1,9 +1,8 @@
-package es.upm.oeg.librairy.nlp.service;
+package es.upm.oeg.librairy.nlp.service.annotator;
 
 import com.google.common.base.Strings;
 import edu.stanford.nlp.pipeline.Annotation;
 import es.upm.oeg.librairy.nlp.annotators.stanford.*;
-import org.apache.avro.AvroRemoteException;
 import org.librairy.service.nlp.facade.model.Form;
 import org.librairy.service.nlp.facade.model.PoS;
 import org.slf4j.Logger;
@@ -14,8 +13,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -23,36 +20,41 @@ import java.util.stream.Collectors;
 /**
  * @author Badenes Olmedo, Carlos <cbadenes@fi.upm.es>
  */
-public class CoreNLPService {
+public class CoreNLPService implements AnnotatorService{
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreNLPService.class);
+    private final String lang;
 
-    protected Map<String,StanfordAnnotator> annotators = new ConcurrentHashMap<>();
+    protected StanfordAnnotator annotator;
 
-    public CoreNLPService() {
-        this.annotators.put("es", new StanfordAnnotatorES());
-        this.annotators.put("en", new StanfordAnnotatorEN());
-        this.annotators.put("fr", new StanfordAnnotatorFR());
-        this.annotators.put("de", new StanfordAnnotatorDE());
+    public CoreNLPService(String lang) {
+        this.lang = lang.toLowerCase();
+        switch (this.lang){
+            case "en":
+                annotator = new StanfordAnnotatorEN();
+                break;
+            case "es":
+                annotator = new StanfordAnnotatorES();
+                break;
+            case "de":
+                annotator = new StanfordAnnotatorDE();
+                break;
+            case "fr":
+                annotator = new StanfordAnnotatorFR();
+                break;
+        }
     }
 
-    public String tokens(String text, List<PoS> filter, Form form, String lang) throws AvroRemoteException {
+    public String tokens(String text, List<PoS> filter, Form form) {
         if (Strings.isNullOrEmpty(text)) return "";
 
-        return annotations(text, filter, lang).stream()
+        return annotations(text, filter).stream()
                 .map(annotation -> (form.equals(Form.LEMMA) ? annotation.getToken().getLemma() : annotation.getToken().getTarget()))
                 .collect(Collectors.joining(" "));
     }
 
-    public List<org.librairy.service.nlp.facade.model.Annotation> annotations(String text, List<PoS> filter, String lang) throws AvroRemoteException {
+    public List<org.librairy.service.nlp.facade.model.Annotation> annotations(String text, List<PoS> filter){
         if (Strings.isNullOrEmpty(text)) return Collections.emptyList();
-
-        if (!annotators.containsKey(lang.toLowerCase())){
-            LOG.warn("language '"+ lang + "' not supported");
-            return Collections.emptyList();
-        }
-
-        StanfordAnnotator annotator = annotators.get(lang.toLowerCase());
 
         List<org.librairy.service.nlp.facade.model.Annotation> tokens = new ArrayList<>();
         Matcher matcher = Pattern.compile(".{1,1000}(\\.|.$)", Pattern.MULTILINE).matcher(text);
@@ -63,7 +65,7 @@ public class CoreNLPService {
             Instant startAnnotation = Instant.now();
             Annotation annotation = annotator.annotate(partialContent);
             Instant endAnnotation = Instant.now();
-            LOG.debug("Annotated  in: " +
+            LOG.debug("Annotated by CoreNLP in: " +
                     ChronoUnit.MINUTES.between(startAnnotation,endAnnotation) + "min " +
                     (ChronoUnit.SECONDS.between(startAnnotation,endAnnotation)%60) + "secs '" + partialContent + "'");
 

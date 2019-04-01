@@ -1,12 +1,12 @@
 package es.upm.oeg.librairy.nlp.service;
 
 import com.google.common.base.CharMatcher;
+import es.upm.oeg.librairy.nlp.service.annotator.AnnotatorService;
 import org.apache.avro.AvroRemoteException;
 import org.librairy.service.nlp.facade.model.Annotation;
 import org.librairy.service.nlp.facade.model.Form;
 import org.librairy.service.nlp.facade.model.Group;
 import org.librairy.service.nlp.facade.model.PoS;
-import org.librairy.service.nlp.facade.utils.AnnotationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,9 +49,7 @@ public class NLPServiceImpl implements org.librairy.service.nlp.facade.model.Nlp
     @Override
     public List<Group> groups(String text, List<PoS> filter, boolean multigrams, boolean references, String lang) throws AvroRemoteException {
 
-        List<Annotation> initialAnnotations = annotate(text, filter, multigrams, references, lang);
-
-        List<Annotation> annotations = references? addDBpediaReferences(initialAnnotations, text, multigrams, references, lang) : initialAnnotations;
+        List<Annotation> annotations = annotate(text, filter, multigrams, references, lang);
 
         Map<Annotation, Long> grouped = annotations.stream().filter(a -> CharMatcher.javaLetterOrDigit().matchesAnyOf(a.getToken().getLemma())).collect(Collectors.groupingBy(a -> a, Collectors.counting()));
 
@@ -67,56 +65,13 @@ public class NLPServiceImpl implements org.librairy.service.nlp.facade.model.Nlp
     }
 
     private List<Annotation> annotate(String text, List<PoS> filter, boolean multigrams, Boolean references, String lang) throws AvroRemoteException {
-        List<Annotation> annotations;
-        if (multigrams){
-            switch(lang.toLowerCase()){
-                case "en":
-                    annotations = serviceManager.getWordnetService(Thread.currentThread()).annotations(text, filter, lang);
-                    break;
-                case "es":
-                    return addDBpediaReferences(serviceManager.getCoreService(Thread.currentThread()).annotations(text, filter, lang), text, multigrams, references, lang);
-                case "fr":
-                    return addDBpediaReferences(serviceManager.getCoreService(Thread.currentThread()).annotations(text, filter, lang), text, multigrams, references, lang);
-                case "de":
-                    return addDBpediaReferences(serviceManager.getCoreService(Thread.currentThread()).annotations(text, filter, lang), text, multigrams, references, lang);
-                default: throw new RuntimeException("Language '" + lang+"' not supported");
-            }
-        }else{
-            switch(lang.toLowerCase()){
-                case "en":
-                    annotations = serviceManager.getCoreService(Thread.currentThread()).annotations(text, filter, lang);
-                    break;
-                case "es":
-                    annotations = serviceManager.getCoreService(Thread.currentThread()).annotations(text, filter, lang);
-                    break;
-                case "fr":
-                    annotations = serviceManager.getCoreService(Thread.currentThread()).annotations(text, filter, lang);
-                    break;
-                case "de":
-                    annotations = serviceManager.getCoreService(Thread.currentThread()).annotations(text, filter, lang);
-                    break;
-                default: throw new RuntimeException("Language '" + lang+"' not supported");
-            }
-        }
 
-        return references? addDBpediaReferences(annotations, text, multigrams, references, lang) : annotations;
-    }
+        Thread thread = Thread.currentThread();
 
-    private List<Annotation> addDBpediaReferences(List<Annotation> annotations, String text, Boolean multigrams, Boolean references, String lang){
-        if (multigrams || references){
-            List<Annotation> refAnnotations = serviceManager.getDBpediaService(Thread.currentThread()).annotations(text, lang);
-            if (multigrams && references){
-                //nothing to filter
-            }else if (multigrams){
-                refAnnotations = refAnnotations.stream().filter(a -> a.getToken().getTarget().contains(" ")).map(a -> {
-                    a.setUri(null);
-                    return a;
-                }).collect(Collectors.toList());
-            }else if (references){
-                refAnnotations = refAnnotations.stream().filter(a -> !a.getToken().getTarget().contains(" ")).collect(Collectors.toList());
-            }
-            return AnnotationUtils.merge(annotations, refAnnotations).stream().filter(a -> a.getToken().getPos() != null).collect(Collectors.toList());
-        }
+        AnnotatorService annotator = serviceManager.getAnnotator(thread, lang, multigrams, references);
+
+        List<Annotation> annotations = annotator.annotations(text,filter);
+
         return annotations;
     }
 }

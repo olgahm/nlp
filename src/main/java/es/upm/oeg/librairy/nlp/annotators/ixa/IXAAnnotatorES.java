@@ -1,7 +1,7 @@
 package es.upm.oeg.librairy.nlp.annotators.ixa;
 
 import com.google.common.io.Files;
-import es.upm.oeg.librairy.nlp.service.IXAService;
+import es.upm.oeg.librairy.nlp.service.annotator.IXAService;
 import eus.ixa.ixa.pipe.pos.Annotate;
 import ixa.kaflib.KAFDocument;
 import org.slf4j.Logger;
@@ -38,12 +38,12 @@ public class IXAAnnotatorES implements IXAAnnotator{
         model              = Paths.get(resourceFolder,"morph-models-"+ IXAService.kafVersion+"/es/es-pos-perceptron-autodict01-ancora-2.0.bin").toFile().getAbsolutePath();
         lemmatizerModel    = Paths.get(resourceFolder,"morph-models-"+ IXAService.kafVersion+"/es/es-lemma-perceptron-ancora-2.0.bin").toFile().getAbsolutePath();
         language           = "es";
-        multiwords         = "false"; //true
+        multiwords         = "false"; // false
         dictag             = Paths.get(resourceFolder,"tag","es").toFile().getAbsolutePath();
-        normalize          = "true";
-        untokenizable      = "false"; // false
+        normalize          = "false"; // true
+        untokenizable      = "false";
         hardParagraph      = "false";
-        noseg              = "false";
+        noseg              = "false"; // false
 
 
         this.annotateProperties = new Properties();
@@ -79,6 +79,7 @@ public class IXAAnnotatorES implements IXAAnnotator{
 
     @Override
     public void annotate(KAFDocument kafDocument) {
+        LOG.debug("annotating document...");
         posAnnotator.annotatePOSToKAF(kafDocument);
     }
 }

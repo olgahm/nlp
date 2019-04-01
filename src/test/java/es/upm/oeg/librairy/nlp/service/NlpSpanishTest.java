@@ -1,7 +1,7 @@
 package es.upm.oeg.librairy.nlp.service;
 
 import es.upm.oeg.librairy.nlp.service.annotator.CoreNLPService;
-import org.junit.Assert;
+import es.upm.oeg.librairy.nlp.service.annotator.IXAService;
 import org.junit.Before;
 import org.junit.Test;
 import org.librairy.service.nlp.facade.model.Annotation;
@@ -12,39 +12,40 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author Badenes Olmedo, Carlos <cbadenes@fi.upm.es>
  */
 
-public class NlpEsServiceTest {
+public class NlpSpanishTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(NlpEsServiceTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NlpSpanishTest.class);
 
-    CoreNLPService service;
+    CoreNLPService coreNLPService;
+    private IXAService ixaService;
 
     @Before
     public void setup(){
-        service = new CoreNLPService("es");
+
+        coreNLPService = new CoreNLPService("es");
+        ixaService      = new IXAService("src/main/bin","es",false);
     }
 
     @Test
     public void annotation() throws IOException {
 
-        String text = "Este es mi primer ejemplo";
+        String text = "Este es mi primer ejemplo sobre computadores";
 
         List<PoS> filter = Collections.emptyList();
 
-        List<Annotation> annotations = service.annotations(text, filter);
-
-        Assert.assertEquals(5, annotations.size());
+        List<Annotation> annotations = coreNLPService.annotations(text, filter);
 
         annotations.forEach(annotation -> System.out.println("Annotation: " + annotation));
 
-        List<String> pos = annotations.stream().map(a -> a.getToken().getPos().name()).collect(Collectors.toList());
 
-        Assert.assertArrayEquals(new String[]{PoS.PRONOUN.name(),PoS.VERB.name(),PoS.ARTICLE.name(),PoS.ADJECTIVE.name(),PoS.NOUN.name()}, pos.toArray());
+        List<Annotation> annotations2 = ixaService.annotations(text, filter);
+        annotations2.forEach(annotation -> System.out.println("Annotation2: " + annotation));
+
 
     }
 

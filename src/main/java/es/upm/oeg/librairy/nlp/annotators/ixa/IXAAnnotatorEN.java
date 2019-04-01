@@ -1,7 +1,7 @@
 package es.upm.oeg.librairy.nlp.annotators.ixa;
 
 import com.google.common.io.Files;
-import es.upm.oeg.librairy.nlp.service.IXAService;
+import es.upm.oeg.librairy.nlp.service.annotator.IXAService;
 import eus.ixa.ixa.pipe.pos.Annotate;
 import ixa.kaflib.KAFDocument;
 import org.slf4j.Logger;
